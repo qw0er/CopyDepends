@@ -1,9 +1,9 @@
 # Introduction
-Copy-depends is a tool to copy depends  
-Can exclude system librariy (excludelist by https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist)
+CopyDepends is a Linux tool to copy the dynamic dependencies of an executable to a specified directory.  
+It can automatically exclude common system libraries (using the [AppImage excludelist](https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist)).
 
 # Usage 
-copy-depends [options] \<executable> \<output Directory>
+copy-depends [options] \<executable> \<output-directory>
 
 # Install
 
