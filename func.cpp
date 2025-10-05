@@ -15,7 +15,7 @@ config argParse(const int argc, const char* argv[])
     desc.add_options()("executable,e",bp::value<std::string>(),"input executable")
     ("output,o",bp::value<std::string>(),"output directory")
     ("help,h","help message")
-    ("verbose,v","output verbose message");
+    ("verbose,v",bp::bool_switch()->default_value(false),"output verbose message");
     bp::positional_options_description pd;
     pd.add("executable",1).add("output",1);
     bp::variables_map varMap;
@@ -26,11 +26,12 @@ config argParse(const int argc, const char* argv[])
         std::cout<<desc<<std::endl;
         exit (0);
     }
+    if (!varMap.contains("executable")||!varMap.contains("output"))
+        throw std::invalid_argument("Not enough arguments");
     config con;
     con.exe=varMap["executable"].as<std::string>();
     con.output=varMap["output"].as<std::string>();
-    if (varMap.contains("verbose"))
-        con.verbose=true;
+    con.verbose=varMap["verbose"].as<bool>();
 
     return con;
 }
@@ -104,7 +105,7 @@ std::filesystem::path selfPath()
 }
 std::filesystem::path fileRoot()
 {
-    if (const std::filesystem::path t=std::getenv("APPDIR");!t.empty())
-        return t/"usr";
+    if (std::getenv("APPDIR"))
+        return std::filesystem::path{std::getenv("APPDIR")}/"usr";
     return selfPath().parent_path().parent_path();
 }

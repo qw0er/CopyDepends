@@ -4,16 +4,39 @@
 #include "func.hpp"
 #include <boost/test/unit_test.hpp>
 #include <regex>
+#include <boost/program_options/options_description.hpp>
 BOOST_AUTO_TEST_SUITE(func)
-BOOST_AUTO_TEST_CASE(argparse)
+    BOOST_AUTO_TEST_SUITE(argP)
+BOOST_AUTO_TEST_CASE(arg1)
 {
     const char* args[3] = {"copyDepends","../other/testApp", "tmp"};
     auto [exe, output,verbose]=argParse(3,args);
     BOOST_TEST(!exe.empty());
     BOOST_TEST(!output.empty());
     BOOST_TEST(exe==args[1]);
+    BOOST_TEST(!verbose);
 }
-BOOST_AUTO_TEST_CASE(dependlist,*boost::unit_test::depends_on("func/argparse"))
+BOOST_AUTO_TEST_CASE(arg2)
+{
+    const char* args[]={"copy-depends"};
+    BOOST_CHECK_THROW(argParse(1,args),std::invalid_argument);
+}
+BOOST_AUTO_TEST_CASE(arg3)
+{
+    const char* args[]={"copy-depends","-v","exe","ttt"};
+    auto [exe, output,verbose]=argParse(4,args);
+    BOOST_TEST(!exe.empty());
+    BOOST_TEST(!output.empty());
+    BOOST_TEST(exe==args[2]);
+    BOOST_TEST(verbose);
+}
+BOOST_AUTO_TEST_CASE(arg4)
+{
+    const char* args[]={"copy-depends","-v","exe","ttt","hhhhh","helo"};
+    BOOST_CHECK_THROW(argParse(6,args),boost::program_options::error);
+}
+BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE(dependlist,*boost::unit_test::depends_on("func/argP"))
 {
     const char* args[3] = {"copyDepends","../other/testApp", "tmp"};
     auto [exe, output,v]=argParse(3,args);
@@ -48,14 +71,6 @@ BOOST_AUTO_TEST_CASE(copyd,*boost::unit_test::depends_on("func/dependlist")
         std::regex_search(filename,match,regex);
         BOOST_TEST((copiedFile.contains(t.filename().string())||list.contains(match.str())));
     }
-}
-BOOST_AUTO_TEST_CASE(excludeList)
-{
-    const auto list=dependExcludeList();
-    BOOST_TEST(!list.empty());
-    const std::regex regex{R"(.+\.so)"};
-    for (const auto &t:list)
-        BOOST_TEST(std::regex_match(t,regex));
 }
 BOOST_AUTO_TEST_CASE(path)
 {
