@@ -1,22 +1,36 @@
 #include "func.hpp"
-#include <array>
+#include <regex>
+#include <fstream>
+#include <print>
+#include <iostream>
 #include <boost/program_options.hpp>
 #include <format>
+#include <unordered_set>
+#include "cdmicro.hpp"
 
 config argParse(const int argc, const char* argv[])
 {
     namespace bp=boost::program_options;
     namespace fs=std::filesystem;
-    bp::options_description desc{"Usage: copyDepends -e <> -o <> [options]"};
-    desc.add_options()("executable,e",bp::value<std::string>()->required(),"input executable")
-    ("output,o",bp::value<std::string>()->required(),"output directory");
+    bp::options_description desc{"Usage: copy-depends <input executable> <output directory>"};
+    desc.add_options()("executable,e",bp::value<std::string>(),"input executable")
+    ("output,o",bp::value<std::string>(),"output directory")
+    ("help,h","help message");
+    bp::positional_options_description pd;
+    pd.add("executable",1).add("output",1);
     bp::variables_map varMap;
-    bp::store(bp::parse_command_line(argc,argv,desc),varMap);
+    bp::store(bp::command_line_parser(argc,argv).options(desc).positional(pd).run(),varMap);
     bp::notify(varMap);
+    if (varMap.contains("help"))
+    {
+        std::cout<<desc<<std::endl;
+        exit (0);
+    }
+
     return {varMap["executable"].as<std::string>(),varMap["output"].as<std::string>()};
 }
 
-std::vector<std::filesystem::path> exeDepends(const std::filesystem::path& exe)
+std::unordered_set<std::filesystem::path> exeDepends(const std::filesystem::path& exe)
 {
     if (!std::filesystem::exists(exe))
         throw std::invalid_argument("Can't find exe path");
@@ -24,7 +38,7 @@ std::vector<std::filesystem::path> exeDepends(const std::filesystem::path& exe)
     if (p==nullptr)
         throw std::runtime_error{"Use ldd failed"};
     char buffer[1024];
-    std::vector<std::filesystem::path> res;
+    std::unordered_set<std::filesystem::path> res;
     while (fgets(buffer,sizeof(buffer),p))
     {
         std::string_view bf = buffer;
@@ -33,23 +47,47 @@ std::vector<std::filesystem::path> exeDepends(const std::filesystem::path& exe)
             continue;
         const auto pos2=bf.find('(');
         auto a=bf.substr(pos1+1,pos2-pos1-1);
-        auto p1=a.find_first_not_of(" \t");
-        auto p2=a.find_last_not_of(" \t");
+        const auto p1=a.find_first_not_of(" \t");
+        const auto p2=a.find_last_not_of(" \t");
         if (p1!=std::string::npos)
-            res.emplace_back(a.substr(p1,p2-p1+1));
+            res.insert(a.substr(p1,p2-p1+1));
     }
     pclose(p);
     return res;
 }
-void copyDepends(const std::vector<std::filesystem::path>& depends, const std::filesystem::path& output)
+void copyDepends(const std::unordered_set<std::filesystem::path>& depends,
+                 const std::filesystem::path& output,
+                 const std::unordered_set<std::string>& excludeList)
 {
     namespace fs=std::filesystem;
     if (!fs::exists(output))
         fs::create_directories(output);
     for (const auto &t:depends)
     {
+        auto outPath=output/t.filename();
         if (!fs::exists(t))
-            throw std::invalid_argument(std::format("Can not find: ",t.string()));
-        fs::copy_file(t,output/t.filename());
+            throw std::invalid_argument(std::format("Can not find: {}",t.string()));
+        std::smatch match;
+        auto filename=t.filename().string();
+        if (const std::regex regex{R"(.+\.so)"}; !(std::regex_search(filename,match,regex)&& excludeList.contains(match.str())))
+        {
+            fs::copy_file(t, outPath, fs::copy_options::overwrite_existing);
+            std::println("Copy \t {} \t -> \t{} ", t.string(), outPath.string());
+        }
     }
+}
+
+std::unordered_set<std::string> dependExcludeList()
+{
+    const std::filesystem::path elp{EXCLUDELIST_PATH};
+    if (!std::filesystem::exists(elp))
+        throw std::invalid_argument("Exclude list is not exist");
+    std::ifstream is{elp};
+    std::unordered_set<std::string> res;
+    std::string line;
+    const std::regex regex{R"(^[^#.]+\.so)"};
+    while (getline(is,line))
+        if (std::smatch match; std::regex_search(line,match,regex))
+            res.insert(match.str());
+    return res;
 }

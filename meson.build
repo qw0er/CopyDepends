@@ -1,12 +1,21 @@
-project('copyDepends', 'cpp',
-        version : '1.0.0',
-        default_options : ['warning_level=3', 'cpp_std=c++2a'])
+project('copy-depends', 'cpp',
+        version : '1.1.1',
+        default_options : ['warning_level=3', 'cpp_std=c++23'])
 
 boostD=dependency('boost',modules:['program_options'])
 testD=dependency('boost',modules: 'unit_test_framework')
 
-exe=executable('copyDepends',['main.cpp','func.cpp'],dependencies: boostD,install: true)
+config=configuration_data()
 
-copyDepends = executable('copyDepends-test', ['test.cpp','func.cpp'],dependencies: [testD,boostD], install : true)
+config.set_quoted('EXCLUDELIST_PATH',join_paths(get_option('prefix'),get_option('datadir'),meson.project_name(),'excludelist.txt'))
+configFile=configure_file(output: 'cdmicro.hpp',configuration: config)
 
+exe=executable('copy-depends',['main.cpp','func.cpp'],dependencies: boostD,install: true)
+
+copyDepends = executable('copyDepends-test', ['test.cpp','func.cpp'],dependencies: [testD,boostD])
 test('test', copyDepends)
+
+install_data(join_paths(get_option('datadir'),meson.project_name(),'excludelist.txt'),rename: 'excludelist.txt')
+
+py=find_program('python')
+meson.add_install_script(py,'../fpmPackage.py')

@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <unordered_set>
 #include <vector>
 
 struct config
@@ -10,6 +11,9 @@ struct config
 
 config argParse(const int argc,const char *argv[]);
 
-std::vector<std::filesystem::path> exeDepends(const std::filesystem::path& exe);
+std::unordered_set<std::filesystem::path> exeDepends(const std::filesystem::path& exe);
 
-void copyDepends(const std::vector<std::filesystem::path> &depends, const std::filesystem::path& output);
+void copyDepends(const std::unordered_set<std::filesystem::path>& depends, const std::filesystem::path& output, const std::unordered_set<std::
+                     string>& excludeList);
+
+std::unordered_set<std::string> dependExcludeList();
