@@ -104,7 +104,7 @@ std::filesystem::path selfPath()
 }
 std::filesystem::path fileRoot()
 {
-    if (auto t=std::getenv("APPDIR"))
-        return t;
+    if (const std::filesystem::path t=std::getenv("APPDIR");!t.empty())
+        return t/"usr";
     return selfPath().parent_path().parent_path();
 }
