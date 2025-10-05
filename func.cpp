@@ -6,7 +6,6 @@
 #include <boost/program_options.hpp>
 #include <format>
 #include <unordered_set>
-#include "cdmicro.hpp"
 
 config argParse(const int argc, const char* argv[])
 {
@@ -79,7 +78,7 @@ void copyDepends(const std::unordered_set<std::filesystem::path>& depends,
 
 std::unordered_set<std::string> dependExcludeList()
 {
-    const std::filesystem::path elp{EXCLUDELIST_PATH};
+    const std::filesystem::path elp{fileRoot()/"share/copy-depends/excludelist.txt"};
     if (!std::filesystem::exists(elp))
         throw std::invalid_argument("Exclude list is not exist");
     std::ifstream is{elp};
@@ -90,4 +89,15 @@ std::unordered_set<std::string> dependExcludeList()
         if (std::smatch match; std::regex_search(line,match,regex))
             res.insert(match.str());
     return res;
+}
+
+std::filesystem::path selfPath()
+{
+    return std::filesystem::read_symlink("/proc/self/exe");
+}
+std::filesystem::path fileRoot()
+{
+    if (auto t=std::getenv("APPDIR"))
+        return t;
+    return selfPath().parent_path().parent_path();
 }

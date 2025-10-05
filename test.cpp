@@ -46,4 +46,9 @@ BOOST_AUTO_TEST_CASE(excludeList)
     for (const auto &t:list)
         BOOST_TEST(std::regex_match(t,regex));
 }
+BOOST_AUTO_TEST_CASE(path)
+{
+    BOOST_TEST_MESSAGE(selfPath());
+    BOOST_TEST_MESSAGE(fileRoot());
+}
 BOOST_AUTO_TEST_SUITE_END()

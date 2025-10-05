@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 #include <unordered_set>
-#include <vector>
 
 struct config
 {
@@ -17,3 +16,7 @@ void copyDepends(const std::unordered_set<std::filesystem::path>& depends, const
                      string>& excludeList);
 
 std::unordered_set<std::string> dependExcludeList();
+
+std::filesystem::path selfPath();
+
+std::filesystem::path fileRoot();
