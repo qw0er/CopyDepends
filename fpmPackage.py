@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 name="copy-depends"
-version='1.1.1'
+version='1.2'
 arch='x86_64'
 url="https://github.com/qw0er/copyDepends#"
 desc="Copy depends"
