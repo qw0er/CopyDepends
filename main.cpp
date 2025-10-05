@@ -8,7 +8,7 @@ int main(int argc,const char* argv[])
     {
         const auto config=argParse(argc,argv);
         const auto d=exeDepends(config.exe);
-        copyDepends(d,config.output, dependExcludeList());
+        copyDepends(d,config.output, dependExcludeList(), config.verbose);
     }catch (const boost::program_options::error &e)
     {
         std::cerr<<"Arguments Error: "<<e.what()<<std::endl;
