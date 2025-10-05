@@ -31,7 +31,7 @@ subprocess.run(cmdBase+[
 
 subprocess.run(cmdBase+[
     '-t','deb',
-    '-d','libboost-program-options'
+    '-d','libboost-program-options1.83.0'
 ]+files)
 
 subprocess.run(['copy-depends','-e',installDir/'usr/bin/copy-depends',
