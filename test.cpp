@@ -8,7 +8,7 @@ BOOST_AUTO_TEST_SUITE(func)
 BOOST_AUTO_TEST_CASE(argparse)
 {
     const char* args[3] = {"copyDepends","../other/testApp", "tmp"};
-    auto [exe, output]=argParse(3,args);
+    auto [exe, output,verbose]=argParse(3,args);
     BOOST_TEST(!exe.empty());
     BOOST_TEST(!output.empty());
     BOOST_TEST(exe==args[1]);
@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE(argparse)
 BOOST_AUTO_TEST_CASE(dependlist,*boost::unit_test::depends_on("func/argparse"))
 {
     const char* args[3] = {"copyDepends","../other/testApp", "tmp"};
-    auto [exe, output]=argParse(3,args);
+    auto [exe, output,v]=argParse(3,args);
     const auto depends=exeDepends(exe);
     for (const auto &t: depends)
         BOOST_TEST(std::filesystem::exists(t));
@@ -33,10 +33,21 @@ BOOST_AUTO_TEST_CASE(copyd,*boost::unit_test::depends_on("func/dependlist")
     *boost::unit_test::depends_on("func/excludelist"))
 {
     const char* args[3] = {"copyDepends","../other/testApp", "tmp"};
-    auto [exe, output]=argParse(3,args);
+    auto [exe, output,v]=argParse(3,args);
     const auto depends=exeDepends(exe);
     const auto list=dependExcludeList();
-    copyDepends(depends,output,list);
+    copyDepends(depends,output,list, v);
+    std::unordered_set<std::string> copiedFile;
+    for (const auto &t:std::filesystem::recursive_directory_iterator{"tmp"})
+        copiedFile.insert(t.path().filename());
+    for (const auto &t: depends)
+    {
+        const std::regex regex{R"(.+\.so)"};
+        std::smatch match;
+        std::string filename{t.filename().string()};
+        std::regex_search(filename,match,regex);
+        BOOST_TEST((copiedFile.contains(t.filename().string())||list.contains(match.str())));
+    }
 }
 BOOST_AUTO_TEST_CASE(excludeList)
 {
@@ -45,5 +56,10 @@ BOOST_AUTO_TEST_CASE(excludeList)
     const std::regex regex{R"(.+\.so)"};
     for (const auto &t:list)
         BOOST_TEST(std::regex_match(t,regex));
+}
+BOOST_AUTO_TEST_CASE(path)
+{
+    BOOST_TEST_MESSAGE(selfPath());
+    BOOST_TEST_MESSAGE(fileRoot());
 }
 BOOST_AUTO_TEST_SUITE_END()

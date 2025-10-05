@@ -6,7 +6,6 @@
 #include <boost/program_options.hpp>
 #include <format>
 #include <unordered_set>
-#include "cdmicro.hpp"
 
 config argParse(const int argc, const char* argv[])
 {
@@ -15,7 +14,8 @@ config argParse(const int argc, const char* argv[])
     bp::options_description desc{"Usage: copy-depends <input executable> <output directory>"};
     desc.add_options()("executable,e",bp::value<std::string>(),"input executable")
     ("output,o",bp::value<std::string>(),"output directory")
-    ("help,h","help message");
+    ("help,h","help message")
+    ("verbose,v","output verbose message");
     bp::positional_options_description pd;
     pd.add("executable",1).add("output",1);
     bp::variables_map varMap;
@@ -26,8 +26,13 @@ config argParse(const int argc, const char* argv[])
         std::cout<<desc<<std::endl;
         exit (0);
     }
+    config con;
+    con.exe=varMap["executable"].as<std::string>();
+    con.output=varMap["output"].as<std::string>();
+    if (varMap.contains("verbose"))
+        con.verbose=true;
 
-    return {varMap["executable"].as<std::string>(),varMap["output"].as<std::string>()};
+    return con;
 }
 
 std::unordered_set<std::filesystem::path> exeDepends(const std::filesystem::path& exe)
@@ -57,7 +62,7 @@ std::unordered_set<std::filesystem::path> exeDepends(const std::filesystem::path
 }
 void copyDepends(const std::unordered_set<std::filesystem::path>& depends,
                  const std::filesystem::path& output,
-                 const std::unordered_set<std::string>& excludeList)
+                 const std::unordered_set<std::string>& excludeList, bool verbose)
 {
     namespace fs=std::filesystem;
     if (!fs::exists(output))
@@ -72,14 +77,15 @@ void copyDepends(const std::unordered_set<std::filesystem::path>& depends,
         if (const std::regex regex{R"(.+\.so)"}; !(std::regex_search(filename,match,regex)&& excludeList.contains(match.str())))
         {
             fs::copy_file(t, outPath, fs::copy_options::overwrite_existing);
-            std::println("Copy \t {} \t -> \t{} ", t.string(), outPath.string());
+            if (verbose)
+                std::println("Copy \t {} \t -> \t{} ", t.string(), outPath.string());
         }
     }
 }
 
 std::unordered_set<std::string> dependExcludeList()
 {
-    const std::filesystem::path elp{EXCLUDELIST_PATH};
+    const std::filesystem::path elp{fileRoot()/"share/copy-depends/excludelist.txt"};
     if (!std::filesystem::exists(elp))
         throw std::invalid_argument("Exclude list is not exist");
     std::ifstream is{elp};
@@ -90,4 +96,15 @@ std::unordered_set<std::string> dependExcludeList()
         if (std::smatch match; std::regex_search(line,match,regex))
             res.insert(match.str());
     return res;
+}
+
+std::filesystem::path selfPath()
+{
+    return std::filesystem::read_symlink("/proc/self/exe");
+}
+std::filesystem::path fileRoot()
+{
+    if (auto t=std::getenv("APPDIR"))
+        return t;
+    return selfPath().parent_path().parent_path();
 }

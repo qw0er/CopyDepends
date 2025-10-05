@@ -5,10 +5,10 @@ project('copy-depends', 'cpp',
 boostD=dependency('boost',modules:['program_options'])
 testD=dependency('boost',modules: 'unit_test_framework')
 
-config=configuration_data()
-
-config.set_quoted('EXCLUDELIST_PATH',join_paths(get_option('prefix'),get_option('datadir'),meson.project_name(),'excludelist.txt'))
-configFile=configure_file(output: 'cdmicro.hpp',configuration: config)
+#config=configuration_data()
+#
+#config.set_quoted('EXCLUDELIST_PATH',join_paths(get_option('prefix'),get_option('datadir'),meson.project_name(),'excludelist.txt'))
+#configFile=configure_file(output: 'cdmicro.hpp',configuration: config)
 
 exe=executable('copy-depends',['main.cpp','func.cpp'],dependencies: boostD,install: true)
 
